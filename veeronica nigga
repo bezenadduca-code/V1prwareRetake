@@ -1,0 +1,411 @@
+-- Veeronica Standalone — hutao [forsaken]
+print("Veeronica Standalone loaded")
+local _ok, _err = pcall(function()
+
+------------------------------------------------------------------------
+-- services
+------------------------------------------------------------------------
+local svc = {
+    Players      = game:GetService("Players"),
+    Run          = game:GetService("RunService"),
+    Input        = game:GetService("UserInputService"),
+    RS           = game:GetService("ReplicatedStorage"),
+    WS           = game:GetService("Workspace"),
+    TweenService = game:GetService("TweenService"),
+}
+
+local lp  = svc.Players.LocalPlayer
+local gui = lp:WaitForChild("PlayerGui", 10)
+
+------------------------------------------------------------------------
+-- WindUI
+------------------------------------------------------------------------
+local ui = loadstring(game:HttpGet(
+    "https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"
+))()
+
+------------------------------------------------------------------------
+-- Colors
+------------------------------------------------------------------------
+local Colors = {
+    Gold      = Color3.fromHex("#FFD700"),
+    LightBlue = Color3.fromHex("#7DD3FC"),
+    Toxic     = Color3.fromHex("#39FF14"),
+    Pink      = Color3.fromHex("#E8194B"),
+}
+
+------------------------------------------------------------------------
+-- Gradient Text Helper
+------------------------------------------------------------------------
+local function GradientText(text, c1, c2)
+    local result = ""
+    local len = #text
+    for i = 1, len do
+        local t = (i - 1) / math.max(len - 1, 1)
+        local r = math.floor((c1.R + (c2.R - c1.R) * t) * 255)
+        local g = math.floor((c1.G + (c2.G - c1.G) * t) * 255)
+        local b = math.floor((c1.B + (c2.B - c1.B) * t) * 255)
+        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+    end
+    return result
+end
+
+------------------------------------------------------------------------
+-- Theme
+------------------------------------------------------------------------
+ui:AddTheme({
+    Name            = "HutaoTheme",
+    Accent          = Color3.fromHex("#E8194B"),
+    Background      = Color3.fromHex("#2D0A14"),
+    Outline         = Color3.fromHex("#E8194B"),
+    Text            = Color3.fromHex("#FFB3C6"),
+    Toggle          = Color3.fromHex("#E8194B"),
+    ToggleBar       = Color3.fromHex("#8B0024"),
+    Checkbox        = Color3.fromHex("#E8194B"),
+    CheckboxIcon    = Color3.fromHex("#FFB3C6"),
+    Slider          = Color3.fromHex("#E8194B"),
+    SliderThumb     = Color3.fromHex("#FFB3C6"),
+    WindowBackground= Color3.fromHex("#1A0610"),
+})
+ui:SetTheme("HutaoTheme")
+
+------------------------------------------------------------------------
+-- Window
+------------------------------------------------------------------------
+local win = ui:CreateWindow({
+    Title          = GradientText("Veeronica", Color3.fromHex("#39FF14"), Colors.Gold),
+    Icon           = "zap",
+    Author         = "hutao [forsaken] — maintained by mitsuki",
+    Folder         = "hutao [forsaken]",
+    Size           = UDim2.fromOffset(480, 400),
+    MinSize        = Vector2.new(400, 320),
+    MaxSize        = Vector2.new(800, 600),
+    Transparent    = true,
+    Theme          = "HutaoTheme",
+    Resizable      = true,
+    SideBarWidth   = 0,
+    HideSearchBar  = true,
+    ScrollBarEnabled = true,
+    BackgroundImageTransparency = 0.45,
+    Background     = "rbxassetid://102034167785966",
+    User = {
+        Enabled   = true,
+        Anonymous = false,
+        Callback  = function() end,
+    },
+})
+
+win:SetToggleKey(Enum.KeyCode.L)
+ui:SetFont("rbxasset://fonts/families/AccanthisADFStd.json")
+
+win:EditOpenButton({
+    Title           = "Open",
+    Icon            = "zap",
+    CornerRadius    = UDim.new(0, 16),
+    StrokeThickness = 0,
+    Color           = ColorSequence.new(Color3.fromHex("000000"), Color3.fromHex("000000")),
+    OnlyMobile      = true,
+    Enabled         = true,
+    Draggable       = true,
+})
+
+local ConfigManager = win.ConfigManager
+local veeronicaConfig = ConfigManager:CreateConfig("veeronica-standalone")
+
+------------------------------------------------------------------------
+-- TAB: VEERONICA (single tab, all sections inside)
+------------------------------------------------------------------------
+local tabVeeronica = win:Tab({ Title = "Veeronica", Icon = "zap", IconColor = Color3.fromHex("#39FF14"), ShowTabTitle = false })
+
+------------------------------------------------------------------------
+-- SECTION: Auto Trick
+------------------------------------------------------------------------
+local sec_022 = tabVeeronica:Section({ Title = "Auto Trick", Opened = true })
+
+do
+    local atEnabled = false
+    local atActiveMonitors = {}
+    local atDescendantAddedConn = nil
+
+    local function atGetBehaviorFolder()
+        return svc.RS:WaitForChild("Assets"):WaitForChild("Survivors"):WaitForChild("Veeronica"):WaitForChild("Behavior")
+    end
+    local function atGetSprintingButton()
+        return lp.PlayerGui:WaitForChild("MainUI"):WaitForChild("SprintingButton")
+    end
+
+    local atBehaviorFolder = nil
+    task.spawn(function()
+        local ok, f = pcall(atGetBehaviorFolder)
+        if ok and f then atBehaviorFolder = f end
+    end)
+
+    local function atMonitorHighlight(h)
+        if not h or atActiveMonitors[h] then return end
+        local connections = {}
+        local prevState = false
+        local function cleanup()
+            for _, conn in ipairs(connections) do if conn and conn.Connected then conn:Disconnect() end end
+            atActiveMonitors[h] = nil
+        end
+        local function adorneeIsPlayer(hh)
+            if not hh then return false end
+            local adornee = hh.Adornee
+            local char = lp.Character
+            if not adornee or not char then return false end
+            return adornee == char or adornee:IsDescendantOf(char)
+        end
+        local function onChanged()
+            if not atEnabled then return end
+            if not h or not h.Parent then cleanup(); return end
+            local currState = adorneeIsPlayer(h)
+            if prevState ~= currState then
+                if currState then
+                    local ok2, btn = pcall(atGetSprintingButton)
+                    if ok2 and btn then
+                        for _, v in pairs(getconnections(btn.MouseButton1Down)) do
+                            pcall(function() v:Fire() end)
+                        end
+                    end
+                end
+            end
+            prevState = currState
+        end
+        local c = h:GetPropertyChangedSignal("Adornee"):Connect(onChanged)
+        if c then table.insert(connections, c) end
+        table.insert(connections, h.AncestryChanged:Connect(function(_, parent)
+            if not parent then cleanup() else onChanged() end
+        end))
+        atActiveMonitors[h] = cleanup
+        task.spawn(onChanged)
+    end
+
+    local function atStartManager()
+        if atDescendantAddedConn or not atBehaviorFolder then return end
+        for _, desc in ipairs(atBehaviorFolder:GetDescendants()) do
+            if desc:IsA("Highlight") then atMonitorHighlight(desc) end
+        end
+        atDescendantAddedConn = atBehaviorFolder.DescendantAdded:Connect(function(child)
+            if child:IsA("Highlight") then atMonitorHighlight(child) end
+        end)
+    end
+    local function atStopManager()
+        if atDescendantAddedConn and atDescendantAddedConn.Connected then atDescendantAddedConn:Disconnect() end
+        atDescendantAddedConn = nil
+        for _, cleanup in pairs(atActiveMonitors) do if type(cleanup) == "function" then pcall(cleanup) end end
+        atActiveMonitors = {}
+    end
+
+    sec_022:Toggle({
+        Title = "Auto Trick", Flag = "veeeAutoTrick", Default = false, Callback = function(on)
+            atEnabled = on
+            if on then
+                if not atBehaviorFolder then local ok, f = pcall(atGetBehaviorFolder); if ok and f then atBehaviorFolder = f end end
+                atStartManager()
+            else
+                atStopManager()
+            end
+        end, Type = "Checkbox"})
+end
+
+------------------------------------------------------------------------
+-- SECTION: SK8 Control
+------------------------------------------------------------------------
+local sec_023 = tabVeeronica:Section({ Title = "SK8 Control", Opened = true })
+
+do
+    local sk8_camera = workspace.CurrentCamera
+    local sk8_shiftlockEnabled = false
+    local sk8_shiftConn = nil
+
+    local function sk8_setShiftlock(state)
+        sk8_shiftlockEnabled = state
+        if sk8_shiftConn then sk8_shiftConn:Disconnect(); sk8_shiftConn = nil end
+        if sk8_shiftlockEnabled then
+            svc.Input.MouseBehavior = Enum.MouseBehavior.LockCenter
+            sk8_shiftConn = svc.Run.RenderStepped:Connect(function()
+                local character = lp.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                if root then
+                    local camCF = sk8_camera.CFrame
+                    root.CFrame = CFrame.new(root.Position, Vector3.new(camCF.LookVector.X+root.Position.X, root.Position.Y, camCF.LookVector.Z+root.Position.Z))
+                end
+            end)
+        else
+            svc.Input.MouseBehavior = Enum.MouseBehavior.Default
+        end
+    end
+
+    local sk8_chargeAnimIds = { "117058860640843" }
+    local sk8_DASH_SPEED = 60
+    local sk8_controlEnabled = true
+    local sk8_controlActive = false
+    local sk8_overrideConn = nil
+    local sk8_savedHumState = {}
+
+    local function sk8_getHumanoid()
+        if not lp or not lp.Character then return nil end
+        return lp.Character:FindFirstChildOfClass("Humanoid")
+    end
+    local function sk8_saveHumState(hum)
+        if not hum or sk8_savedHumState[hum] then return end
+        local s = {}
+        pcall(function()
+            s.WalkSpeed = hum.WalkSpeed
+            local ok, ar = pcall(function() return hum.AutoRotate end)
+            if ok then s.AutoRotate = ar end
+        end)
+        sk8_savedHumState[hum] = s
+    end
+    local function sk8_restoreHumState(hum)
+        if not hum then return end
+        local s = sk8_savedHumState[hum]; if not s then return end
+        pcall(function()
+            if s.WalkSpeed ~= nil then hum.WalkSpeed = s.WalkSpeed end
+            if s.AutoRotate ~= nil then pcall(function() hum.AutoRotate = s.AutoRotate end) end
+        end)
+        sk8_savedHumState[hum] = nil
+    end
+    local function sk8_startOverride()
+        if sk8_controlActive then return end
+        local hum = sk8_getHumanoid(); if not hum then return end
+        sk8_controlActive = true; sk8_saveHumState(hum)
+        pcall(function() hum.WalkSpeed = sk8_DASH_SPEED; hum.AutoRotate = false end)
+        sk8_setShiftlock(true)
+        sk8_overrideConn = svc.Run.RenderStepped:Connect(function()
+            local humanoid = sk8_getHumanoid()
+            local rootPart = humanoid and humanoid.Parent and humanoid.Parent:FindFirstChild("HumanoidRootPart")
+            if not humanoid or not rootPart then return end
+            pcall(function() humanoid.WalkSpeed = sk8_DASH_SPEED; humanoid.AutoRotate = false end)
+            local direction = rootPart.CFrame.LookVector
+            local horizontal = Vector3.new(direction.X, 0, direction.Z)
+            if horizontal.Magnitude > 0 then humanoid:Move(horizontal.Unit) end
+        end)
+    end
+    local function sk8_stopOverride()
+        if not sk8_controlActive then return end
+        sk8_controlActive = false
+        if sk8_overrideConn then pcall(function() sk8_overrideConn:Disconnect() end); sk8_overrideConn = nil end
+        sk8_setShiftlock(false)
+        local hum = sk8_getHumanoid()
+        if hum then
+            pcall(function()
+                sk8_restoreHumState(hum)
+                hum.AutoRotate = true
+                hum:Move(Vector3.new(0,0,0))
+            end)
+        end
+    end
+    local function sk8_detectChargeAnim()
+        local hum = sk8_getHumanoid(); if not hum then return false end
+        for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+            local ok, animId = pcall(function()
+                return tostring(track.Animation and track.Animation.AnimationId or ""):match("%d+")
+            end)
+            if ok and animId and animId ~= "" then
+                if table.find(sk8_chargeAnimIds, animId) then return true end
+            end
+        end
+        return false
+    end
+
+    svc.Run.RenderStepped:Connect(function()
+        if not sk8_controlEnabled then if sk8_controlActive then sk8_stopOverride() end; return end
+        local hum = sk8_getHumanoid()
+        if not hum then if sk8_controlActive then sk8_stopOverride() end; return end
+        if sk8_detectChargeAnim() then if not sk8_controlActive then sk8_startOverride() end
+        else if sk8_controlActive then sk8_stopOverride() end end
+    end)
+
+    lp.CharacterAdded:Connect(function()
+        if sk8_shiftConn then sk8_shiftConn:Disconnect(); sk8_shiftConn = nil end
+        sk8_savedHumState = {}
+    end)
+
+    sec_023:Toggle({
+        Title = "Enable SK8 Control", Default = sk8_controlEnabled, Flag = "sk8ControlEnabled", Callback = function(on)
+            sk8_controlEnabled = on
+            if not on and sk8_controlActive then sk8_stopOverride() end
+        end, Type = "Checkbox"})
+end
+
+------------------------------------------------------------------------
+-- SECTION: Fast Spray
+------------------------------------------------------------------------
+local sec_vee_spray = tabVeeronica:Section({ Title = "Fast Spray", Opened = true })
+
+do
+    local SPRAY_ANIM_ID = "96618767275101"
+    local vee_fastSpray = false
+    local sprayPhase    = 0
+    local sprayBaseCF   = nil
+
+    local function isSprayPainting()
+        local char = lp.Character; if not char then return false end
+        local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return false end
+        for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+            local ok, id = pcall(function()
+                return tostring(track.Animation and track.Animation.AnimationId or ""):match("%d+")
+            end)
+            if ok and id == SPRAY_ANIM_ID then return true end
+        end
+        return false
+    end
+
+    svc.Run.RenderStepped:Connect(function(dt)
+        if not vee_fastSpray then
+            sprayPhase  = 0
+            sprayBaseCF = nil
+            return
+        end
+        if not isSprayPainting() then
+            sprayPhase  = 0
+            sprayBaseCF = nil
+            return
+        end
+        local char = lp.Character
+        local hrp  = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        if not sprayBaseCF or math.abs(math.sin(sprayPhase)) < 0.05 then
+            sprayBaseCF = hrp.CFrame
+        end
+
+        sprayPhase = sprayPhase + dt * (math.pi * 4.5)
+        local offset = math.sin(sprayPhase) * 2
+        hrp.CFrame = sprayBaseCF + (sprayBaseCF.LookVector * (-offset))
+    end)
+
+    lp.CharacterAdded:Connect(function()
+        sprayPhase  = 0
+        sprayBaseCF = nil
+    end)
+
+    sec_vee_spray:Toggle({
+        Title = "Enable Fast Spray", Type = "Checkbox", Flag = "veeeFastSpray", Default = vee_fastSpray,
+        Callback = function(on)
+            vee_fastSpray = on
+            if not on then sprayPhase = 0; sprayBaseCF = nil end
+        end
+    })
+end
+
+------------------------------------------------------------------------
+-- Config: auto-save every 2s + load on start
+------------------------------------------------------------------------
+task.spawn(function()
+    task.wait(1.5)
+    pcall(function() veeronicaConfig:Load() end)
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(2)
+        pcall(function() veeronicaConfig:Save() end)
+    end
+end)
+
+end) -- end pcall
+if not _ok then
+    warn("[Veeronica Standalone ERROR]", tostring(_err))
+end
