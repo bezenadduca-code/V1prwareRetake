@@ -1,4 +1,4 @@
--- Veeronica Standalone — hutao [forsaken]
+
 print("Veeronica Standalone loaded")
 local _ok, _err = pcall(function()
 
