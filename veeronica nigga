@@ -1,126 +1,55 @@
-
+-- Veeronica Standalone — Rayfield/Sirius UI
 print("Veeronica Standalone loaded")
 local _ok, _err = pcall(function()
 
 ------------------------------------------------------------------------
--- services
+-- Services
 ------------------------------------------------------------------------
 local svc = {
-    Players      = game:GetService("Players"),
-    Run          = game:GetService("RunService"),
-    Input        = game:GetService("UserInputService"),
-    RS           = game:GetService("ReplicatedStorage"),
-    WS           = game:GetService("Workspace"),
-    TweenService = game:GetService("TweenService"),
+    Players = game:GetService("Players"),
+    Run     = game:GetService("RunService"),
+    Input   = game:GetService("UserInputService"),
+    RS      = game:GetService("ReplicatedStorage"),
+    WS      = game:GetService("Workspace"),
 }
 
-local lp  = svc.Players.LocalPlayer
-local gui = lp:WaitForChild("PlayerGui", 10)
+local lp = svc.Players.LocalPlayer
 
 ------------------------------------------------------------------------
--- WindUI
+-- Rayfield / Sirius
 ------------------------------------------------------------------------
-local ui = loadstring(game:HttpGet(
-    "https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"
+local Rayfield = loadstring(game:HttpGet(
+    "https://sirius.menu/rayfield"
 ))()
-
-------------------------------------------------------------------------
--- Colors
-------------------------------------------------------------------------
-local Colors = {
-    Gold      = Color3.fromHex("#FFD700"),
-    LightBlue = Color3.fromHex("#7DD3FC"),
-    Toxic     = Color3.fromHex("#39FF14"),
-    Pink      = Color3.fromHex("#E8194B"),
-}
-
-------------------------------------------------------------------------
--- Gradient Text Helper
-------------------------------------------------------------------------
-local function GradientText(text, c1, c2)
-    local result = ""
-    local len = #text
-    for i = 1, len do
-        local t = (i - 1) / math.max(len - 1, 1)
-        local r = math.floor((c1.R + (c2.R - c1.R) * t) * 255)
-        local g = math.floor((c1.G + (c2.G - c1.G) * t) * 255)
-        local b = math.floor((c1.B + (c2.B - c1.B) * t) * 255)
-        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
-    end
-    return result
-end
-
-------------------------------------------------------------------------
--- Theme
-------------------------------------------------------------------------
-ui:AddTheme({
-    Name            = "HutaoTheme",
-    Accent          = Color3.fromHex("#E8194B"),
-    Background      = Color3.fromHex("#2D0A14"),
-    Outline         = Color3.fromHex("#E8194B"),
-    Text            = Color3.fromHex("#FFB3C6"),
-    Toggle          = Color3.fromHex("#E8194B"),
-    ToggleBar       = Color3.fromHex("#8B0024"),
-    Checkbox        = Color3.fromHex("#E8194B"),
-    CheckboxIcon    = Color3.fromHex("#FFB3C6"),
-    Slider          = Color3.fromHex("#E8194B"),
-    SliderThumb     = Color3.fromHex("#FFB3C6"),
-    WindowBackground= Color3.fromHex("#1A0610"),
-})
-ui:SetTheme("HutaoTheme")
 
 ------------------------------------------------------------------------
 -- Window
 ------------------------------------------------------------------------
-local win = ui:CreateWindow({
-    Title          = GradientText("Veeronica", Color3.fromHex("#39FF14"), Colors.Gold),
-    Icon           = "zap",
-    Author         = "hutao [forsaken] — maintained by mitsuki",
-    Folder         = "hutao [forsaken]",
-    Size           = UDim2.fromOffset(480, 400),
-    MinSize        = Vector2.new(400, 320),
-    MaxSize        = Vector2.new(800, 600),
-    Transparent    = true,
-    Theme          = "HutaoTheme",
-    Resizable      = true,
-    SideBarWidth   = 0,
-    HideSearchBar  = true,
-    ScrollBarEnabled = true,
-    BackgroundImageTransparency = 0.45,
-    Background     = "rbxassetid://102034167785966",
-    User = {
-        Enabled   = true,
-        Anonymous = false,
-        Callback  = function() end,
+local Window = Rayfield:CreateWindow({
+    Name             = "Veeronica — hutao [forsaken]",
+    Icon             = 0,           -- Roblox asset id or 0 for none
+    LoadingTitle     = "Veeronica",
+    LoadingSubtitle  = "maintained by mitsuki",
+    Theme            = "Default",   -- Sirius built-in theme
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings   = false,
+    ConfigurationSaving = {
+        Enabled  = true,
+        FolderName = "hutao-forsaken",
+        FileName   = "Veeronica",
     },
+    KeySystem = false,
 })
 
-win:SetToggleKey(Enum.KeyCode.L)
-ui:SetFont("rbxasset://fonts/families/AccanthisADFStd.json")
-
-win:EditOpenButton({
-    Title           = "Open",
-    Icon            = "zap",
-    CornerRadius    = UDim.new(0, 16),
-    StrokeThickness = 0,
-    Color           = ColorSequence.new(Color3.fromHex("000000"), Color3.fromHex("000000")),
-    OnlyMobile      = true,
-    Enabled         = true,
-    Draggable       = true,
-})
-
-local ConfigManager = win.ConfigManager
-local veeronicaConfig = ConfigManager:CreateConfig("veeronica-standalone")
-
 ------------------------------------------------------------------------
--- TAB: VEERONICA (single tab, all sections inside)
+-- TAB: Veeronica (single tab — all sections here)
 ------------------------------------------------------------------------
-local tabVeeronica = win:Tab({ Title = "Veeronica", Icon = "zap", IconColor = Color3.fromHex("#39FF14"), ShowTabTitle = false })
+local Tab = Window:CreateTab("Veeronica", "zap")
 
 ------------------------------------------------------------------------
 -- SECTION: Auto Trick
 ------------------------------------------------------------------------
-local sec_022 = tabVeeronica:Section({ Title = "Auto Trick", Opened = true })
+local SecAutoTrick = Tab:CreateSection("Auto Trick")
 
 do
     local atEnabled = false
@@ -196,22 +125,29 @@ do
         atActiveMonitors = {}
     end
 
-    sec_022:Toggle({
-        Title = "Auto Trick", Flag = "veeeAutoTrick", Default = false, Callback = function(on)
+    Tab:CreateToggle({
+        Name         = "Auto Trick",
+        CurrentValue = false,
+        Flag         = "veeeAutoTrick",
+        Callback     = function(on)
             atEnabled = on
             if on then
-                if not atBehaviorFolder then local ok, f = pcall(atGetBehaviorFolder); if ok and f then atBehaviorFolder = f end end
+                if not atBehaviorFolder then
+                    local ok, f = pcall(atGetBehaviorFolder)
+                    if ok and f then atBehaviorFolder = f end
+                end
                 atStartManager()
             else
                 atStopManager()
             end
-        end, Type = "Checkbox"})
+        end,
+    })
 end
 
 ------------------------------------------------------------------------
 -- SECTION: SK8 Control
 ------------------------------------------------------------------------
-local sec_023 = tabVeeronica:Section({ Title = "SK8 Control", Opened = true })
+local SecSK8 = Tab:CreateSection("SK8 Control")
 
 do
     local sk8_camera = workspace.CurrentCamera
@@ -228,7 +164,11 @@ do
                 local root = character and character:FindFirstChild("HumanoidRootPart")
                 if root then
                     local camCF = sk8_camera.CFrame
-                    root.CFrame = CFrame.new(root.Position, Vector3.new(camCF.LookVector.X+root.Position.X, root.Position.Y, camCF.LookVector.Z+root.Position.Z))
+                    root.CFrame = CFrame.new(root.Position, Vector3.new(
+                        camCF.LookVector.X + root.Position.X,
+                        root.Position.Y,
+                        camCF.LookVector.Z + root.Position.Z
+                    ))
                 end
             end)
         else
@@ -236,12 +176,12 @@ do
         end
     end
 
-    local sk8_chargeAnimIds = { "117058860640843" }
-    local sk8_DASH_SPEED = 60
+    local sk8_chargeAnimIds  = { "117058860640843" }
+    local sk8_DASH_SPEED     = 60
     local sk8_controlEnabled = true
-    local sk8_controlActive = false
-    local sk8_overrideConn = nil
-    local sk8_savedHumState = {}
+    local sk8_controlActive  = false
+    local sk8_overrideConn   = nil
+    local sk8_savedHumState  = {}
 
     local function sk8_getHumanoid()
         if not lp or not lp.Character then return nil end
@@ -261,7 +201,7 @@ do
         if not hum then return end
         local s = sk8_savedHumState[hum]; if not s then return end
         pcall(function()
-            if s.WalkSpeed ~= nil then hum.WalkSpeed = s.WalkSpeed end
+            if s.WalkSpeed  ~= nil then hum.WalkSpeed  = s.WalkSpeed  end
             if s.AutoRotate ~= nil then pcall(function() hum.AutoRotate = s.AutoRotate end) end
         end)
         sk8_savedHumState[hum] = nil
@@ -269,7 +209,8 @@ do
     local function sk8_startOverride()
         if sk8_controlActive then return end
         local hum = sk8_getHumanoid(); if not hum then return end
-        sk8_controlActive = true; sk8_saveHumState(hum)
+        sk8_controlActive = true
+        sk8_saveHumState(hum)
         pcall(function() hum.WalkSpeed = sk8_DASH_SPEED; hum.AutoRotate = false end)
         sk8_setShiftlock(true)
         sk8_overrideConn = svc.Run.RenderStepped:Connect(function()
@@ -292,7 +233,7 @@ do
             pcall(function()
                 sk8_restoreHumState(hum)
                 hum.AutoRotate = true
-                hum:Move(Vector3.new(0,0,0))
+                hum:Move(Vector3.new(0, 0, 0))
             end)
         end
     end
@@ -310,11 +251,16 @@ do
     end
 
     svc.Run.RenderStepped:Connect(function()
-        if not sk8_controlEnabled then if sk8_controlActive then sk8_stopOverride() end; return end
+        if not sk8_controlEnabled then
+            if sk8_controlActive then sk8_stopOverride() end; return
+        end
         local hum = sk8_getHumanoid()
         if not hum then if sk8_controlActive then sk8_stopOverride() end; return end
-        if sk8_detectChargeAnim() then if not sk8_controlActive then sk8_startOverride() end
-        else if sk8_controlActive then sk8_stopOverride() end end
+        if sk8_detectChargeAnim() then
+            if not sk8_controlActive then sk8_startOverride() end
+        else
+            if sk8_controlActive then sk8_stopOverride() end
+        end
     end)
 
     lp.CharacterAdded:Connect(function()
@@ -322,17 +268,21 @@ do
         sk8_savedHumState = {}
     end)
 
-    sec_023:Toggle({
-        Title = "Enable SK8 Control", Default = sk8_controlEnabled, Flag = "sk8ControlEnabled", Callback = function(on)
+    Tab:CreateToggle({
+        Name         = "Enable SK8 Control",
+        CurrentValue = sk8_controlEnabled,
+        Flag         = "sk8ControlEnabled",
+        Callback     = function(on)
             sk8_controlEnabled = on
             if not on and sk8_controlActive then sk8_stopOverride() end
-        end, Type = "Checkbox"})
+        end,
+    })
 end
 
 ------------------------------------------------------------------------
 -- SECTION: Fast Spray
 ------------------------------------------------------------------------
-local sec_vee_spray = tabVeeronica:Section({ Title = "Fast Spray", Opened = true })
+local SecFastSpray = Tab:CreateSection("Fast Spray")
 
 do
     local SPRAY_ANIM_ID = "96618767275101"
@@ -354,14 +304,10 @@ do
 
     svc.Run.RenderStepped:Connect(function(dt)
         if not vee_fastSpray then
-            sprayPhase  = 0
-            sprayBaseCF = nil
-            return
+            sprayPhase = 0; sprayBaseCF = nil; return
         end
         if not isSprayPainting() then
-            sprayPhase  = 0
-            sprayBaseCF = nil
-            return
+            sprayPhase = 0; sprayBaseCF = nil; return
         end
         local char = lp.Character
         local hrp  = char and char:FindFirstChild("HumanoidRootPart")
@@ -377,35 +323,27 @@ do
     end)
 
     lp.CharacterAdded:Connect(function()
-        sprayPhase  = 0
-        sprayBaseCF = nil
+        sprayPhase = 0; sprayBaseCF = nil
     end)
 
-    sec_vee_spray:Toggle({
-        Title = "Enable Fast Spray", Type = "Checkbox", Flag = "veeeFastSpray", Default = vee_fastSpray,
-        Callback = function(on)
+    Tab:CreateToggle({
+        Name         = "Enable Fast Spray",
+        CurrentValue = false,
+        Flag         = "veeeFastSpray",
+        Callback     = function(on)
             vee_fastSpray = on
             if not on then sprayPhase = 0; sprayBaseCF = nil end
-        end
+        end,
     })
 end
 
 ------------------------------------------------------------------------
--- Config: auto-save every 2s + load on start
+-- Load saved config
 ------------------------------------------------------------------------
-task.spawn(function()
-    task.wait(1.5)
-    pcall(function() veeronicaConfig:Load() end)
-end)
-
-task.spawn(function()
-    while true do
-        task.wait(2)
-        pcall(function() veeronicaConfig:Save() end)
-    end
-end)
+Rayfield:LoadConfiguration()
 
 end) -- end pcall
 if not _ok then
     warn("[Veeronica Standalone ERROR]", tostring(_err))
+    print("[Veeronica Standalone ERROR]", tostring(_err))
 end
