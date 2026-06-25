@@ -1,4 +1,4 @@
--- Veeronica Standalone — Rayfield/Sirius UI
+-- Veeronica Standalone — WindUI
 print("Veeronica Standalone loaded")
 local _ok, _err = pcall(function()
 
@@ -16,40 +16,39 @@ local svc = {
 local lp = svc.Players.LocalPlayer
 
 ------------------------------------------------------------------------
--- Rayfield / Sirius
+-- WindUI
 ------------------------------------------------------------------------
-local Rayfield = loadstring(game:HttpGet(
-    "https://sirius.menu/rayfield"
+local WindUI = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/Footagesus/WindUI/main/src/Loader.lua"
 ))()
 
 ------------------------------------------------------------------------
 -- Window
 ------------------------------------------------------------------------
-local Window = Rayfield:CreateWindow({
-    Name             = "Veeronica — hutao [forsaken]",
-    Icon             = 0,           -- Roblox asset id or 0 for none
-    LoadingTitle     = "Veeronica",
-    LoadingSubtitle  = "maintained by mitsuki",
-    Theme            = "Default",   -- Sirius built-in theme
-    DisableRayfieldPrompts = false,
-    DisableBuildWarnings   = false,
-    ConfigurationSaving = {
-        Enabled  = true,
-        FolderName = "hutao-forsaken",
-        FileName   = "Veeronica",
-    },
-    KeySystem = false,
+local Window = WindUI:CreateWindow({
+    Title       = "Veeronica — hutao [forsaken]",
+    Icon        = "zap",
+    Author      = "maintained by mitsuki",
+    Folder      = "hutao-forsaken",
+    Size        = UDim2.fromOffset(580, 460),
+    Transparent = true,
+    Theme       = "Dark",
+    SideBarWidth = 200,
+    HasSideBar   = false,
 })
 
 ------------------------------------------------------------------------
--- TAB: Veeronica (single tab — all sections here)
+-- TAB: Veeronica
 ------------------------------------------------------------------------
-local Tab = Window:CreateTab("Veeronica", "zap")
+local Tab = Window:CreateTab({
+    Title = "Veeronica",
+    Icon  = "zap",
+})
 
 ------------------------------------------------------------------------
 -- SECTION: Auto Trick
 ------------------------------------------------------------------------
-local SecAutoTrick = Tab:CreateSection("Auto Trick")
+Tab:CreateSection({ Title = "Auto Trick" })
 
 do
     local atEnabled = false
@@ -126,10 +125,9 @@ do
     end
 
     Tab:CreateToggle({
-        Name         = "Auto Trick",
-        CurrentValue = false,
-        Flag         = "veeeAutoTrick",
-        Callback     = function(on)
+        Title   = "Auto Trick",
+        Default = false,
+        Callback = function(on)
             atEnabled = on
             if on then
                 if not atBehaviorFolder then
@@ -147,7 +145,7 @@ end
 ------------------------------------------------------------------------
 -- SECTION: SK8 Control
 ------------------------------------------------------------------------
-local SecSK8 = Tab:CreateSection("SK8 Control")
+Tab:CreateSection({ Title = "SK8 Control" })
 
 do
     local sk8_camera = workspace.CurrentCamera
@@ -215,135 +213,4 @@ do
         sk8_setShiftlock(true)
         sk8_overrideConn = svc.Run.RenderStepped:Connect(function()
             local humanoid = sk8_getHumanoid()
-            local rootPart = humanoid and humanoid.Parent and humanoid.Parent:FindFirstChild("HumanoidRootPart")
-            if not humanoid or not rootPart then return end
-            pcall(function() humanoid.WalkSpeed = sk8_DASH_SPEED; humanoid.AutoRotate = false end)
-            local direction = rootPart.CFrame.LookVector
-            local horizontal = Vector3.new(direction.X, 0, direction.Z)
-            if horizontal.Magnitude > 0 then humanoid:Move(horizontal.Unit) end
-        end)
-    end
-    local function sk8_stopOverride()
-        if not sk8_controlActive then return end
-        sk8_controlActive = false
-        if sk8_overrideConn then pcall(function() sk8_overrideConn:Disconnect() end); sk8_overrideConn = nil end
-        sk8_setShiftlock(false)
-        local hum = sk8_getHumanoid()
-        if hum then
-            pcall(function()
-                sk8_restoreHumState(hum)
-                hum.AutoRotate = true
-                hum:Move(Vector3.new(0, 0, 0))
-            end)
-        end
-    end
-    local function sk8_detectChargeAnim()
-        local hum = sk8_getHumanoid(); if not hum then return false end
-        for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
-            local ok, animId = pcall(function()
-                return tostring(track.Animation and track.Animation.AnimationId or ""):match("%d+")
-            end)
-            if ok and animId and animId ~= "" then
-                if table.find(sk8_chargeAnimIds, animId) then return true end
-            end
-        end
-        return false
-    end
-
-    svc.Run.RenderStepped:Connect(function()
-        if not sk8_controlEnabled then
-            if sk8_controlActive then sk8_stopOverride() end; return
-        end
-        local hum = sk8_getHumanoid()
-        if not hum then if sk8_controlActive then sk8_stopOverride() end; return end
-        if sk8_detectChargeAnim() then
-            if not sk8_controlActive then sk8_startOverride() end
-        else
-            if sk8_controlActive then sk8_stopOverride() end
-        end
-    end)
-
-    lp.CharacterAdded:Connect(function()
-        if sk8_shiftConn then sk8_shiftConn:Disconnect(); sk8_shiftConn = nil end
-        sk8_savedHumState = {}
-    end)
-
-    Tab:CreateToggle({
-        Name         = "Enable SK8 Control",
-        CurrentValue = sk8_controlEnabled,
-        Flag         = "sk8ControlEnabled",
-        Callback     = function(on)
-            sk8_controlEnabled = on
-            if not on and sk8_controlActive then sk8_stopOverride() end
-        end,
-    })
-end
-
-------------------------------------------------------------------------
--- SECTION: Fast Spray
-------------------------------------------------------------------------
-local SecFastSpray = Tab:CreateSection("Fast Spray")
-
-do
-    local SPRAY_ANIM_ID = "96618767275101"
-    local vee_fastSpray = false
-    local sprayPhase    = 0
-    local sprayBaseCF   = nil
-
-    local function isSprayPainting()
-        local char = lp.Character; if not char then return false end
-        local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return false end
-        for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
-            local ok, id = pcall(function()
-                return tostring(track.Animation and track.Animation.AnimationId or ""):match("%d+")
-            end)
-            if ok and id == SPRAY_ANIM_ID then return true end
-        end
-        return false
-    end
-
-    svc.Run.RenderStepped:Connect(function(dt)
-        if not vee_fastSpray then
-            sprayPhase = 0; sprayBaseCF = nil; return
-        end
-        if not isSprayPainting() then
-            sprayPhase = 0; sprayBaseCF = nil; return
-        end
-        local char = lp.Character
-        local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-
-        if not sprayBaseCF or math.abs(math.sin(sprayPhase)) < 0.05 then
-            sprayBaseCF = hrp.CFrame
-        end
-
-        sprayPhase = sprayPhase + dt * (math.pi * 4.5)
-        local offset = math.sin(sprayPhase) * 2
-        hrp.CFrame = sprayBaseCF + (sprayBaseCF.LookVector * (-offset))
-    end)
-
-    lp.CharacterAdded:Connect(function()
-        sprayPhase = 0; sprayBaseCF = nil
-    end)
-
-    Tab:CreateToggle({
-        Name         = "Enable Fast Spray",
-        CurrentValue = false,
-        Flag         = "veeeFastSpray",
-        Callback     = function(on)
-            vee_fastSpray = on
-            if not on then sprayPhase = 0; sprayBaseCF = nil end
-        end,
-    })
-end
-
-------------------------------------------------------------------------
--- Load saved config
-------------------------------------------------------------------------
-Rayfield:LoadConfiguration()
-
-end) -- end pcall
-if not _ok then
-    warn("[Veeronica Standalone ERROR]", tostring(_err))
-    print("[Veeronica Standalone ERROR]", tostring(_err))
-end
+            local root
