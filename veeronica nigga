@@ -1,216 +1,393 @@
--- Veeronica Standalone — WindUI
-print("Veeronica Standalone loaded")
-local _ok, _err = pcall(function()
+-- Veeronica Standalone - Crimson Theme
+-- Auto Trick + SK8 Control + Fast Spray
 
-------------------------------------------------------------------------
--- Services
-------------------------------------------------------------------------
-local svc = {
-    Players = game:GetService("Players"),
-    Run     = game:GetService("RunService"),
-    Input   = game:GetService("UserInputService"),
-    RS      = game:GetService("ReplicatedStorage"),
-    WS      = game:GetService("Workspace"),
-}
+local player = game:GetService("Players").LocalPlayer
+local workspace = game:GetService("Workspace")
+local runService = game:GetService("RunService")
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local userInputService = game:GetService("UserInputService")
 
-local lp = svc.Players.LocalPlayer
-
-------------------------------------------------------------------------
--- WindUI
-------------------------------------------------------------------------
-local WindUI = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/Footagesus/WindUI/main/src/Loader.lua"
+-- Load WindUI
+local ui = loadstring(game:HttpGet(
+    "https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"
 ))()
 
-------------------------------------------------------------------------
--- Window
-------------------------------------------------------------------------
-local Window = WindUI:CreateWindow({
-    Title       = "Veeronica — hutao [forsaken]",
-    Icon        = "zap",
-    Author      = "maintained by mitsuki",
-    Folder      = "hutao-forsaken",
-    Size        = UDim2.fromOffset(580, 460),
-    Transparent = true,
-    Theme       = "Dark",
-    SideBarWidth = 200,
-    HasSideBar   = false,
+-- ============================================================
+-- CRIMSON THEME
+-- ============================================================
+ui:AddTheme({
+    Name            = "Crimson",
+    Accent          = Color3.fromRGB(220, 20, 60),      -- Crimson red
+    Background      = Color3.fromRGB(40, 0, 10),         -- Dark red-black
+    Outline         = Color3.fromRGB(220, 20, 60),
+    Text            = Color3.fromRGB(255, 180, 190),
+    Toggle          = Color3.fromRGB(220, 20, 60),
+    ToggleBar       = Color3.fromRGB(100, 0, 20),
+    Checkbox        = Color3.fromRGB(220, 20, 60),
+    CheckboxIcon    = Color3.fromRGB(255, 180, 190),
+    Slider          = Color3.fromRGB(220, 20, 60),
+    SliderThumb     = Color3.fromRGB(255, 180, 190),
+    WindowBackground= Color3.fromRGB(20, 0, 5),
+})
+ui:SetTheme("Crimson")
+
+-- ============================================================
+-- WINDOW
+-- ============================================================
+local win = ui:CreateWindow({
+    Title          = "Veeronica",
+    Icon           = "zap",
+    Author         = "Standalone",
+    Folder         = "veeronica",
+    Size           = UDim2.fromOffset(460, 420),
+    MinSize        = Vector2.new(400, 350),
+    MaxSize        = Vector2.new(700, 600),
+    Transparent    = true,
+    Theme          = "Crimson",
+    Resizable      = true,
+    SideBarWidth   = 160,
+    ScrollBarEnabled = true,
 })
 
-------------------------------------------------------------------------
--- TAB: Veeronica
-------------------------------------------------------------------------
-local Tab = Window:CreateTab({
-    Title = "Veeronica",
-    Icon  = "zap",
+win:SetToggleKey(Enum.KeyCode.V)
+ui:SetFont("rbxasset://fonts/families/AccanthisADFStd.json")
+
+-- ============================================================
+-- TAB: VEERONICA
+-- ============================================================
+local tabVeeronica = win:Tab({ 
+    Title = "Veeronica", 
+    Icon = "zap", 
+    IconColor = Color3.fromRGB(220, 20, 60), 
+    ShowTabTitle = false 
 })
 
-------------------------------------------------------------------------
--- SECTION: Auto Trick
-------------------------------------------------------------------------
-Tab:CreateSection({ Title = "Auto Trick" })
+-- ============================================================
+-- SECTION: AUTO TRICK
+-- ============================================================
+local secAutoTrick = tabVeeronica:Section({ Title = "Auto Trick", Opened = true })
 
-do
-    local atEnabled = false
-    local atActiveMonitors = {}
-    local atDescendantAddedConn = nil
+local atEnabled = false
+local atActiveMonitors = {}
+local atDescendantAddedConn = nil
 
-    local function atGetBehaviorFolder()
-        return svc.RS:WaitForChild("Assets"):WaitForChild("Survivors"):WaitForChild("Veeronica"):WaitForChild("Behavior")
-    end
-    local function atGetSprintingButton()
-        return lp.PlayerGui:WaitForChild("MainUI"):WaitForChild("SprintingButton")
-    end
+local function atGetBehaviorFolder()
+    return replicatedStorage:WaitForChild("Assets"):WaitForChild("Survivors"):WaitForChild("Veeronica"):WaitForChild("Behavior")
+end
 
-    local atBehaviorFolder = nil
-    task.spawn(function()
-        local ok, f = pcall(atGetBehaviorFolder)
-        if ok and f then atBehaviorFolder = f end
-    end)
+local function atGetSprintingButton()
+    return player.PlayerGui:WaitForChild("MainUI"):WaitForChild("SprintingButton")
+end
 
-    local function atMonitorHighlight(h)
-        if not h or atActiveMonitors[h] then return end
-        local connections = {}
-        local prevState = false
-        local function cleanup()
-            for _, conn in ipairs(connections) do if conn and conn.Connected then conn:Disconnect() end end
-            atActiveMonitors[h] = nil
+local atBehaviorFolder = nil
+task.spawn(function()
+    local ok, f = pcall(atGetBehaviorFolder)
+    if ok and f then atBehaviorFolder = f end
+end)
+
+local function atMonitorHighlight(h)
+    if not h or atActiveMonitors[h] then return end
+    local connections = {}
+    local prevState = false
+    local function cleanup()
+        for _, conn in ipairs(connections) do
+            if conn and conn.Connected then conn:Disconnect() end
         end
-        local function adorneeIsPlayer(hh)
-            if not hh then return false end
-            local adornee = hh.Adornee
-            local char = lp.Character
-            if not adornee or not char then return false end
-            return adornee == char or adornee:IsDescendantOf(char)
-        end
-        local function onChanged()
-            if not atEnabled then return end
-            if not h or not h.Parent then cleanup(); return end
-            local currState = adorneeIsPlayer(h)
-            if prevState ~= currState then
-                if currState then
-                    local ok2, btn = pcall(atGetSprintingButton)
-                    if ok2 and btn then
-                        for _, v in pairs(getconnections(btn.MouseButton1Down)) do
-                            pcall(function() v:Fire() end)
-                        end
+        atActiveMonitors[h] = nil
+    end
+    local function adorneeIsPlayer(hh)
+        if not hh then return false end
+        local adornee = hh.Adornee
+        local char = player.Character
+        if not adornee or not char then return false end
+        return adornee == char or adornee:IsDescendantOf(char)
+    end
+    local function onChanged()
+        if not atEnabled then return end
+        if not h or not h.Parent then cleanup(); return end
+        local currState = adorneeIsPlayer(h)
+        if prevState ~= currState then
+            if currState then
+                local ok2, btn = pcall(atGetSprintingButton)
+                if ok2 and btn then
+                    for _, v in pairs(getconnections(btn.MouseButton1Down)) do
+                        pcall(function() v:Fire() end)
                     end
                 end
             end
-            prevState = currState
         end
-        local c = h:GetPropertyChangedSignal("Adornee"):Connect(onChanged)
-        if c then table.insert(connections, c) end
-        table.insert(connections, h.AncestryChanged:Connect(function(_, parent)
-            if not parent then cleanup() else onChanged() end
-        end))
-        atActiveMonitors[h] = cleanup
-        task.spawn(onChanged)
+        prevState = currState
     end
-
-    local function atStartManager()
-        if atDescendantAddedConn or not atBehaviorFolder then return end
-        for _, desc in ipairs(atBehaviorFolder:GetDescendants()) do
-            if desc:IsA("Highlight") then atMonitorHighlight(desc) end
-        end
-        atDescendantAddedConn = atBehaviorFolder.DescendantAdded:Connect(function(child)
-            if child:IsA("Highlight") then atMonitorHighlight(child) end
-        end)
-    end
-    local function atStopManager()
-        if atDescendantAddedConn and atDescendantAddedConn.Connected then atDescendantAddedConn:Disconnect() end
-        atDescendantAddedConn = nil
-        for _, cleanup in pairs(atActiveMonitors) do if type(cleanup) == "function" then pcall(cleanup) end end
-        atActiveMonitors = {}
-    end
-
-    Tab:CreateToggle({
-        Title   = "Auto Trick",
-        Default = false,
-        Callback = function(on)
-            atEnabled = on
-            if on then
-                if not atBehaviorFolder then
-                    local ok, f = pcall(atGetBehaviorFolder)
-                    if ok and f then atBehaviorFolder = f end
-                end
-                atStartManager()
-            else
-                atStopManager()
-            end
-        end,
-    })
+    local c = h:GetPropertyChangedSignal("Adornee"):Connect(onChanged)
+    if c then table.insert(connections, c) end
+    table.insert(connections, h.AncestryChanged:Connect(function(_, parent)
+        if not parent then cleanup() else onChanged() end
+    end))
+    atActiveMonitors[h] = cleanup
+    task.spawn(onChanged)
 end
 
-------------------------------------------------------------------------
--- SECTION: SK8 Control
-------------------------------------------------------------------------
-Tab:CreateSection({ Title = "SK8 Control" })
+local function atStartManager()
+    if atDescendantAddedConn or not atBehaviorFolder then return end
+    for _, desc in ipairs(atBehaviorFolder:GetDescendants()) do
+        if desc:IsA("Highlight") then atMonitorHighlight(desc) end
+    end
+    atDescendantAddedConn = atBehaviorFolder.DescendantAdded:Connect(function(child)
+        if child:IsA("Highlight") then atMonitorHighlight(child) end
+    end)
+end
 
-do
-    local sk8_camera = workspace.CurrentCamera
-    local sk8_shiftlockEnabled = false
-    local sk8_shiftConn = nil
+local function atStopManager()
+    if atDescendantAddedConn and atDescendantAddedConn.Connected then atDescendantAddedConn:Disconnect() end
+    atDescendantAddedConn = nil
+    for _, cleanup in pairs(atActiveMonitors) do
+        if type(cleanup) == "function" then pcall(cleanup) end
+    end
+    atActiveMonitors = {}
+end
 
-    local function sk8_setShiftlock(state)
-        sk8_shiftlockEnabled = state
-        if sk8_shiftConn then sk8_shiftConn:Disconnect(); sk8_shiftConn = nil end
-        if sk8_shiftlockEnabled then
-            svc.Input.MouseBehavior = Enum.MouseBehavior.LockCenter
-            sk8_shiftConn = svc.Run.RenderStepped:Connect(function()
-                local character = lp.Character
-                local root = character and character:FindFirstChild("HumanoidRootPart")
-                if root then
-                    local camCF = sk8_camera.CFrame
-                    root.CFrame = CFrame.new(root.Position, Vector3.new(
-                        camCF.LookVector.X + root.Position.X,
-                        root.Position.Y,
-                        camCF.LookVector.Z + root.Position.Z
-                    ))
-                end
-            end)
+secAutoTrick:Toggle({
+    Title = "Auto Trick",
+    Flag = "veeeAutoTrick",
+    Default = false,
+    Callback = function(on)
+        atEnabled = on
+        if on then
+            if not atBehaviorFolder then
+                local ok, f = pcall(atGetBehaviorFolder)
+                if ok and f then atBehaviorFolder = f end
+            end
+            atStartManager()
         else
-            svc.Input.MouseBehavior = Enum.MouseBehavior.Default
+            atStopManager()
+        end
+    end,
+    Type = "Checkbox"
+})
+
+-- ============================================================
+-- SECTION: SK8 CONTROL
+-- ============================================================
+local secSk8 = tabVeeronica:Section({ Title = "SK8 Control", Opened = true })
+
+local sk8_camera = workspace.CurrentCamera
+local sk8_shiftlockEnabled = false
+local sk8_shiftConn = nil
+
+local function sk8_setShiftlock(state)
+    sk8_shiftlockEnabled = state
+    if sk8_shiftConn then sk8_shiftConn:Disconnect(); sk8_shiftConn = nil end
+    if sk8_shiftlockEnabled then
+        userInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+        sk8_shiftConn = runService.RenderStepped:Connect(function()
+            local character = player.Character
+            local root = character and character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local camCF = sk8_camera.CFrame
+                root.CFrame = CFrame.new(root.Position, Vector3.new(camCF.LookVector.X + root.Position.X, root.Position.Y, camCF.LookVector.Z + root.Position.Z))
+            end
+        end)
+    else
+        userInputService.MouseBehavior = Enum.MouseBehavior.Default
+    end
+end
+
+local sk8_chargeAnimIds = { "117058860640843" }
+local sk8_DASH_SPEED = 60
+local sk8_controlEnabled = true
+local sk8_controlActive = false
+local sk8_overrideConn = nil
+local sk8_savedHumState = {}
+
+local function sk8_getHumanoid()
+    if not player or not player.Character then return nil end
+    return player.Character:FindFirstChildOfClass("Humanoid")
+end
+
+local function sk8_saveHumState(hum)
+    if not hum or sk8_savedHumState[hum] then return end
+    local s = {}
+    pcall(function()
+        s.WalkSpeed = hum.WalkSpeed
+        local ok, ar = pcall(function() return hum.AutoRotate end)
+        if ok then s.AutoRotate = ar end
+    end)
+    sk8_savedHumState[hum] = s
+end
+
+local function sk8_restoreHumState(hum)
+    if not hum then return end
+    local s = sk8_savedHumState[hum]
+    if not s then return end
+    pcall(function()
+        if s.WalkSpeed ~= nil then hum.WalkSpeed = s.WalkSpeed end
+        if s.AutoRotate ~= nil then pcall(function() hum.AutoRotate = s.AutoRotate end) end
+    end)
+    sk8_savedHumState[hum] = nil
+end
+
+local function sk8_startOverride()
+    if sk8_controlActive then return end
+    local hum = sk8_getHumanoid()
+    if not hum then return end
+    sk8_controlActive = true
+    sk8_saveHumState(hum)
+    pcall(function() hum.WalkSpeed = sk8_DASH_SPEED; hum.AutoRotate = false end)
+    sk8_setShiftlock(true)
+    sk8_overrideConn = runService.RenderStepped:Connect(function()
+        local humanoid = sk8_getHumanoid()
+        local rootPart = humanoid and humanoid.Parent and humanoid.Parent:FindFirstChild("HumanoidRootPart")
+        if not humanoid or not rootPart then return end
+        pcall(function() humanoid.WalkSpeed = sk8_DASH_SPEED; humanoid.AutoRotate = false end)
+        local direction = rootPart.CFrame.LookVector
+        local horizontal = Vector3.new(direction.X, 0, direction.Z)
+        if horizontal.Magnitude > 0 then humanoid:Move(horizontal.Unit) end
+    end)
+end
+
+local function sk8_stopOverride()
+    if not sk8_controlActive then return end
+    sk8_controlActive = false
+    if sk8_overrideConn then pcall(function() sk8_overrideConn:Disconnect() end); sk8_overrideConn = nil end
+    sk8_setShiftlock(false)
+    local hum = sk8_getHumanoid()
+    if hum then
+        pcall(function()
+            sk8_restoreHumState(hum)
+            hum.AutoRotate = true
+            hum:Move(Vector3.new(0,0,0))
+        end)
+    end
+end
+
+local function sk8_detectChargeAnim()
+    local hum = sk8_getHumanoid()
+    if not hum then return false end
+    for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+        local ok, animId = pcall(function()
+            return tostring(track.Animation and track.Animation.AnimationId or ""):match("%d+")
+        end)
+        if ok and animId and animId ~= "" then
+            if table.find(sk8_chargeAnimIds, animId) then return true end
         end
     end
+    return false
+end
 
-    local sk8_chargeAnimIds  = { "117058860640843" }
-    local sk8_DASH_SPEED     = 60
-    local sk8_controlEnabled = true
-    local sk8_controlActive  = false
-    local sk8_overrideConn   = nil
-    local sk8_savedHumState  = {}
+runService.RenderStepped:Connect(function()
+    if not sk8_controlEnabled then
+        if sk8_controlActive then sk8_stopOverride() end
+        return
+    end
+    local hum = sk8_getHumanoid()
+    if not hum then
+        if sk8_controlActive then sk8_stopOverride() end
+        return
+    end
+    if sk8_detectChargeAnim() then
+        if not sk8_controlActive then sk8_startOverride() end
+    else
+        if sk8_controlActive then sk8_stopOverride() end
+    end
+end)
 
-    local function sk8_getHumanoid()
-        if not lp or not lp.Character then return nil end
-        return lp.Character:FindFirstChildOfClass("Humanoid")
-    end
-    local function sk8_saveHumState(hum)
-        if not hum or sk8_savedHumState[hum] then return end
-        local s = {}
-        pcall(function()
-            s.WalkSpeed = hum.WalkSpeed
-            local ok, ar = pcall(function() return hum.AutoRotate end)
-            if ok then s.AutoRotate = ar end
+player.CharacterAdded:Connect(function()
+    if sk8_shiftConn then sk8_shiftConn:Disconnect(); sk8_shiftConn = nil end
+    sk8_savedHumState = {}
+end)
+
+secSk8:Toggle({
+    Title = "Enable SK8 Control",
+    Default = sk8_controlEnabled,
+    Flag = "sk8ControlEnabled",
+    Callback = function(on)
+        sk8_controlEnabled = on
+        if not on and sk8_controlActive then sk8_stopOverride() end
+    end,
+    Type = "Checkbox"
+})
+
+-- ============================================================
+-- SECTION: FAST SPRAY
+-- ============================================================
+local secSpray = tabVeeronica:Section({ Title = "Fast Spray", Opened = true })
+
+local SPRAY_ANIM_ID = "96618767275101"
+local vee_fastSpray = false
+local sprayPhase = 0
+local sprayBaseCF = nil
+
+local function isSprayPainting()
+    local char = player.Character
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return false end
+    for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+        local ok, id = pcall(function()
+            return tostring(track.Animation and track.Animation.AnimationId or ""):match("%d+")
         end)
-        sk8_savedHumState[hum] = s
+        if ok and id == SPRAY_ANIM_ID then return true end
     end
-    local function sk8_restoreHumState(hum)
-        if not hum then return end
-        local s = sk8_savedHumState[hum]; if not s then return end
-        pcall(function()
-            if s.WalkSpeed  ~= nil then hum.WalkSpeed  = s.WalkSpeed  end
-            if s.AutoRotate ~= nil then pcall(function() hum.AutoRotate = s.AutoRotate end) end
-        end)
-        sk8_savedHumState[hum] = nil
+    return false
+end
+
+runService.RenderStepped:Connect(function(dt)
+    if not vee_fastSpray then
+        sprayPhase = 0
+        sprayBaseCF = nil
+        return
     end
-    local function sk8_startOverride()
-        if sk8_controlActive then return end
-        local hum = sk8_getHumanoid(); if not hum then return end
-        sk8_controlActive = true
-        sk8_saveHumState(hum)
-        pcall(function() hum.WalkSpeed = sk8_DASH_SPEED; hum.AutoRotate = false end)
-        sk8_setShiftlock(true)
-        sk8_overrideConn = svc.Run.RenderStepped:Connect(function()
-            local humanoid = sk8_getHumanoid()
-            local root
+    if not isSprayPainting() then
+        sprayPhase = 0
+        sprayBaseCF = nil
+        return
+    end
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if not sprayBaseCF or math.abs(math.sin(sprayPhase)) < 0.05 then
+        sprayBaseCF = hrp.CFrame
+    end
+
+    sprayPhase = sprayPhase + dt * (math.pi * 4.5)
+    local offset = math.sin(sprayPhase) * 2
+    hrp.CFrame = sprayBaseCF + (sprayBaseCF.LookVector * (-offset))
+end)
+
+player.CharacterAdded:Connect(function()
+    sprayPhase = 0
+    sprayBaseCF = nil
+end)
+
+secSpray:Toggle({
+    Title = "Enable Fast Spray",
+    Type = "Checkbox",
+    Flag = "veeeFastSpray",
+    Default = vee_fastSpray,
+    Callback = function(on)
+        vee_fastSpray = on
+        if not on then sprayPhase = 0; sprayBaseCF = nil end
+    end
+})
+
+-- ============================================================
+-- CLOSE BUTTON
+-- ============================================================
+local tabInterface = win:Tab({ 
+    Title = "Interface", 
+    Icon = "layout-dashboard", 
+    IconColor = Color3.fromRGB(220, 20, 60), 
+    ShowTabTitle = false 
+})
+
+local secClose = tabInterface:Section({ Title = "UI Functions", Opened = true })
+
+secClose:Button({ 
+    Title = "Close UI", 
+    Locked = false, 
+    Callback = function()
+        pcall(function() win:Destroy() end)
+    end 
+})
+
